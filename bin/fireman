@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'active_resource'
+require 'yaml'
+
+OPTIONS = YAML::load(File.read('.fireman.yml'))
+
+TOKEN = OPTIONS['pivotal_tracker']['token']
+PROJECT = OPTIONS['pivotal_tracker']['project_id']
+
+class Story < ActiveResource::Base
+  self.site = "https://www.pivotaltracker.com/services/v3/projects/#{PROJECT}"
+  headers['X-TrackerToken'] = TOKEN
+end
+
+story_ids = []
+while gets
+  if $_.match /(\d+)\]$/
+    story_ids << $~[1].to_i
+  end
+end
+
+outputs = []
+story_ids.uniq.each do |id|
+  story = Story.find(id, :params => { :project_id => PROJECT })
+  outputs << '================================================================================'
+  outputs << "##{story.id} - #{story.name}"
+  outputs << '================================================================================'
+  if story.description
+    outputs << story.description
+  else
+    outputs << "No description"
+  end
+  outputs << "\n\n"
+end
+
+puts outputs.join "\n"
